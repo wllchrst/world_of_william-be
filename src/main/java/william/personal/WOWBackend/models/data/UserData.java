@@ -1,4 +1,8 @@
 package william.personal.WOWBackend.models.data;
 
-public class UserData {
+public record UserData(
+        String id,
+        String email,
+        String name
+) {
 }
