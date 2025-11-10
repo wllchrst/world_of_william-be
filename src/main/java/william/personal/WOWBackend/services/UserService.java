@@ -1,7 +1,13 @@
 package william.personal.WOWBackend.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import william.personal.WOWBackend.mappers.UserMapper;
+import william.personal.WOWBackend.models.data.UserData;
 import william.personal.WOWBackend.models.dto.CreateUserDTO;
+import william.personal.WOWBackend.models.dto.LoginUserDTO;
 import william.personal.WOWBackend.models.entity.User;
 import william.personal.WOWBackend.repositories.UserRepository;
 
@@ -9,28 +15,41 @@ import javax.management.openmbean.KeyAlreadyExistsException;
 
 @Service
 public class UserService {
+    @Autowired
+    private UserMapper userMapper;
     private final UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    public User findUserByEmail(String email) {
-        User user = this.userRepository.findByEmail(email);
-        return user;
-    }
-
     public User saveUser(CreateUserDTO createUserDTO) {
-        User existingUser = this.findUserByEmail(createUserDTO.email());
+        User existingUser = userRepository
+                .findByEmail(createUserDTO.email()).orElse(null);
+
         if (existingUser != null)
             throw new KeyAlreadyExistsException(String.format("Email %s already exists", createUserDTO.email()));
+
+        String encodedPassword = passwordEncoder.encode(createUserDTO.password());
 
         User user = User.builder()
                 .email(createUserDTO.email())
                 .name(createUserDTO.name())
-                .password(createUserDTO.password())
+                .password(encodedPassword)
                 .build();
 
         return this.userRepository.save(user);
+    }
+
+    public UserData loginUser(LoginUserDTO loginUserDTO) {
+        User existingUser = userRepository.findByEmail(loginUserDTO.email())
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password"));
+
+        boolean password_matches = passwordEncoder.matches(loginUserDTO.password(), existingUser.getPassword());
+
+        return password_matches ? userMapper.toUserData(existingUser) : null;
     }
 }

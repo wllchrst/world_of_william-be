@@ -1,7 +1,10 @@
 package william.personal.WOWBackend.models.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -11,7 +14,6 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @Table(name = "users")
-@Data
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
