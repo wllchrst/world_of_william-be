@@ -1,9 +1,9 @@
 package william.personal.WOWBackend.controllers;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.web.bind.annotation.*;
+import william.personal.WOWBackend.models.data.BaseResponse;
 import william.personal.WOWBackend.models.data.UserData;
 import william.personal.WOWBackend.models.dto.CreateUserDTO;
 import william.personal.WOWBackend.models.dto.LoginUserDTO;
@@ -21,16 +21,23 @@ public class UserController {
     }
 
     @PostMapping("/create_user")
-    public boolean createUser(@RequestBody CreateUserDTO createUserDTO) {
+    public ResponseEntity<BaseResponse<Boolean>> createUser(@RequestBody CreateUserDTO createUserDTO) {
         User user = this.userService.saveUser(createUserDTO);
-
-        return user != null;
+        return BaseResponse.success("Login success", user != null);
     }
 
     @PostMapping("/login")
-    public UserData loginUser(@RequestBody LoginUserDTO loginUserDTO) {
-        UserData data = this.userService.loginUser(loginUserDTO);
-        System.out.println(data.email());
-        return data;
+    public ResponseEntity<BaseResponse<String>> loginUser(@RequestBody LoginUserDTO loginUserDTO) {
+        String token = this.userService.loginUser(loginUserDTO);
+        return BaseResponse.success("Login success", token);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<BaseResponse<UserData>> me(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            UserData user = this.userService.retrieveUserByToken(token);
+            return BaseResponse.success("Login success", user);
+        } else throw new AuthorizationDeniedException("You are not authorized");
     }
 }

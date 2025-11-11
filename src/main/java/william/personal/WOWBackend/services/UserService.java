@@ -1,6 +1,7 @@
 package william.personal.WOWBackend.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import william.personal.WOWBackend.mappers.UserMapper;
 import william.personal.WOWBackend.models.data.UserData;
 import william.personal.WOWBackend.models.dto.CreateUserDTO;
 import william.personal.WOWBackend.models.dto.LoginUserDTO;
+import william.personal.WOWBackend.models.entity.Log;
 import william.personal.WOWBackend.models.entity.User;
 import william.personal.WOWBackend.repositories.UserRepository;
 
@@ -17,6 +19,10 @@ import javax.management.openmbean.KeyAlreadyExistsException;
 public class UserService {
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private JwtService jwtService;
+    @Autowired
+    private LogService logService;
     private final UserRepository userRepository;
 
     @Autowired
@@ -44,12 +50,32 @@ public class UserService {
         return this.userRepository.save(user);
     }
 
-    public UserData loginUser(LoginUserDTO loginUserDTO) {
-        User existingUser = userRepository.findByEmail(loginUserDTO.email())
+    public String loginUser(LoginUserDTO loginUserDTO) {
+        User user = userRepository.findByEmail(loginUserDTO.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password"));
 
-        boolean password_matches = passwordEncoder.matches(loginUserDTO.password(), existingUser.getPassword());
+        boolean password_matches = passwordEncoder.matches(loginUserDTO.password(), user.getPassword());
 
-        return password_matches ? userMapper.toUserData(existingUser) : null;
+        if (password_matches) {
+            String token = jwtService.generateToken(user.getEmail());
+            logService.createLog(user.getEmail(),
+                    "Login from the function loginUser", Log.LOGIN_TYPE);
+
+            return token;
+        } else
+            throw new UsernameNotFoundException("Invalid username or password");
+    }
+
+    public UserData retrieveUserByToken(String token) {
+        boolean valid = jwtService.validateToken(token);
+
+        if (!valid)
+            throw new AuthorizationDeniedException("User is not authorized!");
+
+        String email = jwtService.extractEmail(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password"));
+
+        return userMapper.toUserData(user);
     }
 }
