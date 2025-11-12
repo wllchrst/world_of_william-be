@@ -1,5 +1,6 @@
 package william.personal.WOWBackend.models.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,17 +17,16 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@Table(name = "users")
-public class User extends BaseEntity {
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
-
+@Table(name = "search_histories")
+public class SearchHistory extends BaseEntity {
     @Column(nullable = false)
-    private String name;
+    String searchQuery;
 
-    @Column(nullable = false)
-    private String password;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<SearchHistory> searchHistories = new ArrayList<>();
+    @OneToMany(mappedBy = "searchHistory", cascade = CascadeType.ALL)
+    private List<SearchResult> searchResults = new ArrayList<>();
 }
