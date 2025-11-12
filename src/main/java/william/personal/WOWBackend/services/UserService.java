@@ -78,4 +78,9 @@ public class UserService {
 
         return userMapper.toUserData(user);
     }
+
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("User with email %s not found", email)));
+    }
 }
